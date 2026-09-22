@@ -1,0 +1,10 @@
+{
+  "type": "forge:ore_shaped",
+  "pattern": ["WWW", "PCP", "PPP"],
+  "key": {
+    "W": { "item": "minecraft:wool", "data": 14 },
+    "P": { "type": "forge:ore_dict", "ore": "plankWood" },
+    "C": { "item": "minecraft:chest" }
+  },
+  "result": { "item": "marketblocks:market_stall", "count": 1 }
+}

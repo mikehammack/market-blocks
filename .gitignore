@@ -1,0 +1,12 @@
+.gradle/
+build/
+out/
+*.class
+libs
+curseforge/
+logs/
+textures_raw/
+mc1211/build/
+mc1211/libs/
+forge1122/build/
+forge1122/libs/

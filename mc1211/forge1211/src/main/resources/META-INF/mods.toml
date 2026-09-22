@@ -1,0 +1,26 @@
+modLoader="javafml"
+loaderVersion="[52,)"
+license="MIT"
+
+[[mods]]
+modId="marketblocks"
+version="${version}"
+displayName="Market Blocks"
+authors="Maxim Arcana"
+description='''A dead-simple server market: two blocks, sane configs, and a working economy in five minutes.'''
+
+[[dependencies.marketblocks]]
+modId="forge"
+mandatory=true
+type="required"
+versionRange="[52,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.marketblocks]]
+modId="minecraft"
+mandatory=true
+type="required"
+versionRange="[1.21.1,1.22)"
+ordering="NONE"
+side="BOTH"

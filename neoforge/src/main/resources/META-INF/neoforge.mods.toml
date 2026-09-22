@@ -1,0 +1,27 @@
+modLoader="javafml"
+loaderVersion="[12,)"
+license="MIT"
+
+[[mods]]
+modId="marketblocks"
+version="${version}"
+displayName="Market Blocks"
+authors="Maxim Arcana"
+description='''A dead-simple server market: two blocks, sane configs, and a working economy in five minutes.'''
+
+[[dependencies.marketblocks]]
+modId="neoforge"
+type="required"
+versionRange="[26.3.0.3-beta,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.marketblocks]]
+modId="minecraft"
+type="required"
+versionRange="[26.3,27)"
+ordering="NONE"
+side="BOTH"
+
+[[mixins.marketblocks]]
+config="marketblocks.mixins.json"

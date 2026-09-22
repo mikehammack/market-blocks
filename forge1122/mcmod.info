@@ -1,0 +1,9 @@
+[{
+  "modid": "marketblocks",
+  "name": "Market Blocks",
+  "description": "A dead-simple server market: two blocks, sane configs, and a working economy in five minutes.",
+  "version": "1.0.6",
+  "mcversion": "1.12.2",
+  "url": "",
+  "authorList": ["Maxim Arcana"]
+}]
