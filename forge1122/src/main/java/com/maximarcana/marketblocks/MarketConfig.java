@@ -26,6 +26,7 @@ import net.minecraftforge.fml.common.registry.ForgeRegistries;
 public final class MarketConfig {
     private static MarketConfig INSTANCE;
     private static File configFile;
+    private static File gameDir;
 
     public String currencyName = "Credits";
     public String currencySymbol = "$";
@@ -35,6 +36,33 @@ public final class MarketConfig {
     public int maxStallsPerPlayer = 5;
     public boolean allowCreativePurchases = false;
     public final List<PriceEntry> prices = new ArrayList<>();
+
+    // -- Schematic shop -------------------------------------------------
+    /** Server-side folder holding .schematic files. Absolute, or relative to the game dir. */
+    public String schematicFolder = "config/marketblocks/schematics";
+    /** Refuse to paste schematics larger than this many blocks (grief protection). */
+    public int schematicMaxVolume = 32768;
+    /** Horizontal distance from the Schematic Market block to each build slot. */
+    public int schematicSlotRadius = 6;
+    /** Price used when an operator lists a schematic from the GUI. */
+    public long schematicDefaultPrice = 100;
+    public final List<SchematicEntry> schematicEntries = new ArrayList<>();
+
+    /** "LightAttackShip.schematic" -> price. */
+    public static final class SchematicEntry {
+        public final String file;
+        public final long price;
+
+        public SchematicEntry(String file, long price) {
+            this.file = file;
+            this.price = price;
+        }
+
+        @Override
+        public String toString() {
+            return file + "=" + price;
+        }
+    }
 
     /** "minecraft:diamond" or "#logWood" -> buy price + optional explicit sell price. */
     public static final class PriceEntry {
@@ -63,12 +91,20 @@ public final class MarketConfig {
         return INSTANCE;
     }
 
+    /** Game directory (parent of config/); used to resolve relative paths. */
+    public static File gameDir() {
+        return gameDir;
+    }
+
     // ------------------------------------------------------------------
     // Loading
     // ------------------------------------------------------------------
 
     public static synchronized void load(File file) {
         configFile = file;
+        File parent = file.getAbsoluteFile().getParentFile();
+        gameDir = parent != null && parent.getName().equalsIgnoreCase("config")
+            ? parent.getParentFile() : parent;
         MarketConfig parsed = parseFile(file, true);
         INSTANCE = parsed != null ? parsed : new MarketConfig();
     }
@@ -138,6 +174,40 @@ public final class MarketConfig {
             }
             c.prices.addAll(parsed);
 
+            cfg.addCustomCategoryComment("schematics",
+                    "Schematic shop (Schematic Market block).\n"
+                            + "Drop Schematica-format .schematic files into the folder below;\n"
+                            + "operators list them at a price from the block's configure GUI\n"
+                            + "(or here, one per line:  \"Name.schematic=price\").\n"
+                            + "Players buy a listing and the structure is pasted at one of\n"
+                            + "8 build slots around the block, base sitting at the block's height.\n"
+                            + "Block ids are the numeric runtime ids of THIS server (1.12.2 has no\n"
+                            + "flattening): schematics paste reliably on the server that saved them.");
+            c.schematicFolder = cfg.get("schematics", "folder", "config/marketblocks/schematics",
+                    "Folder holding .schematic files. Absolute path, or relative to the game directory.").getString();
+            c.schematicMaxVolume = cfg.get("schematics", "maxVolume", 32768,
+                    "Largest schematic that may be pasted, in blocks. Grief protection.",
+                    64, 16_777_216).getInt();
+            c.schematicSlotRadius = cfg.get("schematics", "slotRadius", 6,
+                    "Horizontal distance in blocks from the Schematic Market to each build slot.",
+                    2, 64).getInt();
+            c.schematicDefaultPrice = cfg.get("schematics", "defaultPrice", 100,
+                    "Price used when an operator lists a schematic from the in-game GUI.").getInt();
+            cfg.addCustomCategoryComment("schematic_prices",
+                    "Schematic listings for the Schematic Market, one per line:\n"
+                            + "  \"LightAttackShip.schematic=5000\"\n"
+                            + "Only files present in the folder above can be bought; missing files\n"
+                            + "are shown dimmed in the configure GUI, never deleted from this list.");
+            List<SchematicEntry> schematics = new ArrayList<>();
+            for (String line : cfg.get("schematic_prices", "entries", new String[0]).getStringList()) {
+                SchematicEntry e = parseSchematicEntry(line);
+                if (e == null) {
+                    throw new IllegalArgumentException("Bad schematic entry: \"" + line + "\"");
+                }
+                schematics.add(e);
+            }
+            c.schematicEntries.addAll(schematics);
+
             if (cfg.hasChanged()) {
                 cfg.save();
             }
@@ -148,8 +218,7 @@ public final class MarketConfig {
         }
     }
 
-    private static PriceEntry parseEntry(String line) {
-        String s = line.trim();
+    private static PriceEntry parseEntry(String line) {        String s = line.trim();
         if (s.isEmpty()) {
             return null;
         }
@@ -189,6 +258,35 @@ public final class MarketConfig {
             return null;
         }
         return new PriceEntry(key, isOreDict, buy, sell);
+    }
+
+    /** "Name.schematic=5000". The file must live in the schematic folder to be buyable. */
+    private static SchematicEntry parseSchematicEntry(String line) {
+        String s = line.trim();
+        if (s.isEmpty()) {
+            return null;
+        }
+        int eq = s.indexOf('=');
+        if (eq <= 0) {
+            return null;
+        }
+        String file = s.substring(0, eq).trim();
+        if (file.isEmpty() || file.contains("/") || file.contains("\\") || file.contains("..")) {
+            return null;
+        }
+        if (!file.toLowerCase(java.util.Locale.ROOT).endsWith(".schematic")) {
+            file = file + ".schematic";
+        }
+        long price;
+        try {
+            price = Long.parseLong(s.substring(eq + 1).trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        if (price < 0) {
+            return null;
+        }
+        return new SchematicEntry(file, price);
     }
 
     // ------------------------------------------------------------------
@@ -272,8 +370,7 @@ public final class MarketConfig {
      * exists its line is replaced; otherwise it is appended. A null buy
      * removes the entry.
      */
-    public static synchronized void setPrice(String key, Long buy, Long sell) {
-        MarketConfig c = INSTANCE;
+    public static synchronized void setPrice(String key, Long buy, Long sell) {        MarketConfig c = INSTANCE;
         if (c == null || configFile == null) {
             return;
         }
@@ -294,5 +391,43 @@ public final class MarketConfig {
         } catch (Exception e) {
             System.err.println("[MarketBlocks] Failed to save config after GUI edit: " + e.getMessage());
         }
+    }
+
+    /**
+     * Set a schematic listing from the GUI and persist it. If the file is
+     * already listed its price is replaced; otherwise it is appended.
+     * A null price removes the listing.
+     */
+    public static synchronized void setSchematicPrice(String file, Long price) {
+        MarketConfig c = INSTANCE;
+        if (c == null || configFile == null) {
+            return;
+        }
+        c.schematicEntries.removeIf(e -> e.file.equalsIgnoreCase(file));
+        if (price != null) {
+            c.schematicEntries.add(new SchematicEntry(file, price));
+        }
+        try {
+            Configuration cfg = new Configuration(configFile);
+            cfg.load();
+            String[] lines = new String[c.schematicEntries.size()];
+            for (int i = 0; i < lines.length; i++) {
+                lines[i] = c.schematicEntries.get(i).toString();
+            }
+            cfg.get("schematic_prices", "entries", new String[0]).set(lines);
+            cfg.save();
+        } catch (Exception e) {
+            System.err.println("[MarketBlocks] Failed to save config after GUI edit: " + e.getMessage());
+        }
+    }
+
+    /** Live price for a listed schematic file, or null when not listed. */
+    public Long schematicPrice(String file) {
+        for (SchematicEntry e : schematicEntries) {
+            if (e.file.equalsIgnoreCase(file)) {
+                return e.price;
+            }
+        }
+        return null;
     }
 }

@@ -1,1 +1,0 @@
-{"client":[],"compatibilityLevel":"JAVA_25","injectors":{"defaultRequire":1},"mixins":["StallBreakProtectionMixin"],"package":"com.maximarcana.marketblocks.mixin","required":true,"server":[]}

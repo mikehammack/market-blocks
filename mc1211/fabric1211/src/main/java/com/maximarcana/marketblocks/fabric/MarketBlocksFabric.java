@@ -40,10 +40,14 @@ public final class MarketBlocksFabric implements ModInitializer {
             MarketContent.STALL_BLOCK);
         Registry.register(BuiltInRegistries.BLOCK, MarketBlocks.id("admin_market"),
             MarketContent.ADMIN_MARKET_BLOCK);
+        Registry.register(BuiltInRegistries.BLOCK, MarketBlocks.id("schematic_market"),
+            MarketContent.SCHEMATIC_MARKET_BLOCK);
         Registry.register(BuiltInRegistries.ITEM, MarketBlocks.id("market_stall"),
             MarketContent.STALL_ITEM);
         Registry.register(BuiltInRegistries.ITEM, MarketBlocks.id("admin_market"),
             MarketContent.ADMIN_MARKET_ITEM);
+        Registry.register(BuiltInRegistries.ITEM, MarketBlocks.id("schematic_market"),
+            MarketContent.SCHEMATIC_MARKET_ITEM);
         MarketContent.STALL_BLOCK_ENTITY_TYPE = MarketContent.createStallBlockEntityType();
         Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE, MarketBlocks.id("market_stall"),
             MarketContent.STALL_BLOCK_ENTITY_TYPE);
@@ -78,6 +82,7 @@ public final class MarketBlocksFabric implements ModInitializer {
                 CreativeModeTab.Output vanilla = output;
                 vanilla.accept(new ItemStack(MarketContent.STALL_ITEM));
                 vanilla.accept(new ItemStack(MarketContent.ADMIN_MARKET_ITEM));
+                vanilla.accept(new ItemStack(MarketContent.SCHEMATIC_MARKET_ITEM));
             });
 
         MarketBlocks.LOGGER.info("Market Blocks Fabric entrypoint initialized");

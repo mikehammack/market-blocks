@@ -88,6 +88,9 @@ public class MarketBlocksForge {
             ModelLoader.setCustomModelResourceLocation(MarketContent.ADMIN_MARKET_ITEM, 0,
                 new ModelResourceLocation(
                     new ResourceLocation(MarketBlocks.MOD_ID, "admin_market"), "inventory"));
+            ModelLoader.setCustomModelResourceLocation(MarketContent.SCHEMATIC_MARKET_ITEM, 0,
+                new ModelResourceLocation(
+                    new ResourceLocation(MarketBlocks.MOD_ID, "schematic_market"), "inventory"));
         }
     }
 }

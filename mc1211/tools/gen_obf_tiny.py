@@ -59,7 +59,7 @@ def main():
             continue
         m = CLASS_RE.match(ln)
         if m:
-            owner_off, owner_obf = internal(m.group(1)), m.group(2)
+            owner_off, owner_obf = internal(m.group(1)), internal(m.group(2))
             obf2off[owner_obf] = owner_off
             off2obf[owner_off] = owner_obf
             continue

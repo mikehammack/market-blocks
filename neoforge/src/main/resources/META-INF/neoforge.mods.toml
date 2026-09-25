@@ -22,6 +22,3 @@ type="required"
 versionRange="[26.3,27)"
 ordering="NONE"
 side="BOTH"
-
-[[mixins.marketblocks]]
-config="marketblocks.mixins.json"

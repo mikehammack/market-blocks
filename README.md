@@ -5,7 +5,7 @@ Stalls** plus an op-run **Admin Market**, backed by a virtual currency (no
 physical coin item in v1), tag-based pricing, a hot-reloadable config, and three
 commands with atomic server-side transactions.
 
-- Mod ID: `marketblocks` · Version: `1.0.6`
+- Mod ID: `marketblocks` · Version: `1.0.7`
 - License: MIT — © 2026 Maxim Arcana
 - CurseForge: https://www.curseforge.com/minecraft/mc-mods/market-blocks
 
@@ -17,6 +17,10 @@ commands with atomic server-side transactions.
   be placed, broken, or configured in Creative mode (26.x) — op-level gating on
   1.12.2.
 - **Admin Market** — an op-run infinite shop for server economies.
+- **Schematic Market** (new in 1.0.7) — players browse an op-managed price list
+  and pay to have structures pasted near the block. Reads `.schematic`
+  (Schematica) and `.schem` (Sponge) files from a server-side folder set in
+  config; ops list, reprice, and delist entries from an in-game configure mode.
 - **Economy defaults** — 0% stall tax and a 60% sell ratio, so a fresh server has
   a working market out of the box. Prices can be keyed to item tags (e.g.
   `#logWood=4`, or `#minecraft:planks` on 26.x).
@@ -33,7 +37,7 @@ commands with atomic server-side transactions.
 
 Each tree is self-contained with its own README and build script (see
 `mc1211/README.md` and `forge1122/README.md`). The 1.12.2 port keeps full
-feature parity with 1.0.6 using Forge events and GUIs instead of mixins.
+feature parity with 1.0.7 using Forge events and GUIs instead of mixins.
 
 ## Building (26.3)
 
@@ -50,3 +54,16 @@ the compile-only toolchain jars (not committed — too large and version-specifi
 the official Mojang 26.3 client jar, its `mc-deps/` libraries, Fabric
 loader/API/modules, NeoForge + FancyModLoader jars, `sponge-mixin.jar`, and
 compile-only API `stubs/` (never packaged).
+
+Set up `libs/` from scratch with the checked-in toolchain scripts:
+
+```bash
+python3 tools/fetch_1263.py      # downloads the MC 26.3 client, deps, Fabric loader 0.19.5, NeoForge 26.3.0.3-beta
+bash tools/build_stubs_1263.sh   # compiles the compile-only Mixin/Fabric-API/NeoForge API stubs (verifies them against the real APIs)
+bash build.sh 1.0.7              # builds the Fabric + NeoForge jars
+```
+
+Note: 26.3 ships unobfuscated (official Mojang names, no intermediary published
+by Fabric), so the mod compiles and ships in official names — no remapping step.
+(1.21.1 is still obfuscated; its separate toolchain in `mc1211/tools/` handles
+the official → obfuscated → intermediary remap.)

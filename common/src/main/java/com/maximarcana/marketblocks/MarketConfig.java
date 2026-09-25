@@ -41,11 +41,38 @@ public final class MarketConfig {
     public record PriceEntry(String key, boolean isTag, long buy, Long sell) {
     }
 
+    // -- Schematic shop -------------------------------------------------
+    /** Server-side folder holding .schematic/.schem files. Absolute, or relative to the game dir. */
+    public String schematicFolder = "config/marketblocks/schematics";
+    /** Refuse to paste schematics larger than this many blocks (grief protection). */
+    public int schematicMaxVolume = 32768;
+    /** Horizontal distance from the Schematic Market block to each build slot. */
+    public int schematicSlotRadius = 6;
+    /** Price used when an operator lists a schematic from the GUI. */
+    public long schematicDefaultPrice = 100;
+    public final List<SchematicEntry> schematicEntries = new ArrayList<>();
+
+    /** "LightAttackShip.schematic" -> price. */
+    public static final class SchematicEntry {
+        public final String file;
+        public long price;
+
+        public SchematicEntry(String file, long price) {
+            this.file = file;
+            this.price = price;
+        }
+    }
+
     private MarketConfig() {
     }
 
     public static MarketConfig get() {
         return INSTANCE;
+    }
+
+    /** Absolute path of the loaded config file, or null if never loaded. */
+    public static Path configPath() {
+        return configFile;
     }
 
     // ------------------------------------------------------------------
@@ -60,7 +87,12 @@ public final class MarketConfig {
                 Files.writeString(file, defaultFileText(), StandardCharsets.UTF_8);
                 MarketBlocks.LOGGER.info("Created default config at {}", file);
             }
-            INSTANCE = parse(Files.readString(file, StandardCharsets.UTF_8), true);
+            // Lenient at startup: the strict item-ID check needs the vanilla
+            // item registry, which may not be populated yet when the mod
+            // entrypoint runs. Unknown IDs render as a barrier block with a
+            // red name in the GUI; /market reload still validates strictly,
+            // when registries are guaranteed live.
+            INSTANCE = parse(Files.readString(file, StandardCharsets.UTF_8), false);
             MarketBlocks.LOGGER.info("Loaded Market Blocks config ({} price entries)", INSTANCE.prices.size());
         } catch (Exception e) {
             MarketBlocks.LOGGER.error("Failed to load config, using safe defaults", e);
@@ -169,6 +201,79 @@ public final class MarketConfig {
         return null;
     }
 
+    /** Live price for a listed schematic file, or null when not listed. */
+    public synchronized Long schematicPrice(String file) {
+        for (SchematicEntry e : schematicEntries) {
+            if (e.file.equalsIgnoreCase(file)) {
+                return e.price;
+            }
+        }
+        return null;
+    }
+
+    /** GUI-driven listing edit: updates the live list and rewrites the config file surgically. */
+    public static synchronized void setSchematicPrice(String file, Long price) {
+        MarketConfig c = INSTANCE;
+        if (c == null || configFile == null) {
+            return;
+        }
+        c.schematicEntries.removeIf(e -> e.file.equalsIgnoreCase(file));
+        if (price != null) {
+            c.schematicEntries.add(new SchematicEntry(file, price));
+        }
+        c.rewriteSchematicLine(file, price);
+    }
+
+    private static String schematicLine(String file, long price) {
+        return "\"" + file + "\" = " + price;
+    }
+
+    private void rewriteSchematicLine(String file, Long price) {
+        try {
+            List<String> lines = new ArrayList<>(Files.readAllLines(configFile, StandardCharsets.UTF_8));
+            Pattern entryStart = Pattern.compile("^\\s*\"" + Pattern.quote(file) + "\"\\s*=",
+                Pattern.CASE_INSENSITIVE);
+            boolean inSection = false;
+            int insertAt = -1;
+            for (int i = 0; i < lines.size(); i++) {
+                String t = lines.get(i).trim();
+                if (t.equals("[schematic_prices]")) {
+                    inSection = true;
+                    continue;
+                }
+                if (inSection && t.startsWith("[") && t.endsWith("]")) {
+                    insertAt = i;
+                    break;
+                }
+                if (inSection && entryStart.matcher(lines.get(i)).find()) {
+                    if (price == null) {
+                        lines.remove(i);
+                    } else {
+                        lines.set(i, schematicLine(file, price));
+                    }
+                    Files.write(configFile, lines, StandardCharsets.UTF_8);
+                    return;
+                }
+            }
+            if (price == null) {
+                return; // deleting a non-existent line: nothing to do
+            }
+            String line = schematicLine(file, price);
+            if (inSection) {
+                lines.add(insertAt < 0 ? lines.size() : insertAt, line);
+            } else {
+                if (!lines.isEmpty() && !lines.get(lines.size() - 1).isBlank()) {
+                    lines.add("");
+                }
+                lines.add("[schematic_prices]");
+                lines.add(line);
+            }
+            Files.write(configFile, lines, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            MarketBlocks.LOGGER.error("Failed to write schematic entry to config file", e);
+        }
+    }
+
     private static String priceLine(String fullKey, long buy, Long sell) {
         return sell == null
             ? "\"" + fullKey + "\" = { buy = " + buy + " }"
@@ -250,6 +355,8 @@ public final class MarketConfig {
     private static MarketConfig parse(String text, boolean strict) {
         MarketConfig cfg = new MarketConfig();
         boolean inPrices = false;
+        boolean inSchematics = false;
+        boolean inSchematicPrices = false;
         int lineNo = 0;
         for (String raw : text.split("\n")) {
             lineNo++;
@@ -259,6 +366,20 @@ public final class MarketConfig {
             }
             if (line.equals("[prices]")) {
                 inPrices = true;
+                inSchematics = false;
+                inSchematicPrices = false;
+                continue;
+            }
+            if (line.equals("[schematics]")) {
+                inPrices = false;
+                inSchematics = true;
+                inSchematicPrices = false;
+                continue;
+            }
+            if (line.equals("[schematic_prices]")) {
+                inPrices = false;
+                inSchematics = false;
+                inSchematicPrices = true;
                 continue;
             }
             if (line.startsWith("[") && line.endsWith("]")) {
@@ -266,6 +387,17 @@ public final class MarketConfig {
             }
             if (inPrices) {
                 cfg.prices.add(parsePriceEntry(line, lineNo, strict));
+            } else if (inSchematicPrices) {
+                SchematicEntry e = parseSchematicEntry(line, lineNo);
+                if (e != null) {
+                    cfg.schematicEntries.add(e);
+                }
+            } else if (inSchematics) {
+                Matcher m = KEY_VALUE.matcher(line);
+                if (!m.matches()) {
+                    throw new IllegalArgumentException("Cannot parse line " + lineNo + ": " + raw.trim());
+                }
+                applySchematicScalar(cfg, m.group(1), m.group(2).trim(), lineNo);
             } else {
                 Matcher m = KEY_VALUE.matcher(line);
                 if (!m.matches()) {
@@ -306,6 +438,36 @@ public final class MarketConfig {
             throw new IllegalArgumentException("Sell price must be >= 1 on line " + lineNo);
         }
         return new PriceEntry(key, isTag, buy, sell);
+    }
+
+    private static final Pattern SCHEMATIC_ENTRY =
+        Pattern.compile("^\"((?:[^\"\\\\]|\\\\.)*)\"\\s*=\\s*(\\d+)\\s*$");
+
+    private static SchematicEntry parseSchematicEntry(String line, int lineNo) {
+        // Format: "Name.schematic" = 5000  or  "Name.schem" = 5000
+        Matcher m = SCHEMATIC_ENTRY.matcher(line);
+        if (!m.matches()) {
+            throw new IllegalArgumentException("Bad schematic entry on line " + lineNo
+                + " (expected \"File.schematic\" = price): " + line);
+        }
+        String file = m.group(1).replace("\\\"", "\"").replace("\\\\", "\\");
+        long price = parseLong(m.group(2), lineNo, "schematic price", 1, Long.MAX_VALUE);
+        String lower = file.toLowerCase();
+        if (!lower.endsWith(".schematic") && !lower.endsWith(".schem")) {
+            throw new IllegalArgumentException("Schematic file must end in .schematic or .schem on line "
+                + lineNo + ": " + file);
+        }
+        return new SchematicEntry(file, price);
+    }
+
+    private static void applySchematicScalar(MarketConfig cfg, String key, String value, int lineNo) {
+        switch (key) {
+            case "folder" -> cfg.schematicFolder = parseString(value, lineNo, key);
+            case "maxVolume" -> cfg.schematicMaxVolume = (int) parseLong(value, lineNo, key, 64, 16_777_216);
+            case "slotRadius" -> cfg.schematicSlotRadius = (int) parseLong(value, lineNo, key, 2, 64);
+            case "defaultPrice" -> cfg.schematicDefaultPrice = parseLong(value, lineNo, key, 1, Long.MAX_VALUE);
+            default -> throw new IllegalArgumentException("Unknown schematics setting on line " + lineNo + ": " + key);
+        }
     }
 
     private static void applyScalar(MarketConfig cfg, String key, String value, int lineNo) {
@@ -427,6 +589,30 @@ public final class MarketConfig {
             "#minecraft:logs" = { buy = 4 }
             "minecraft:iron_ingot" = { buy = 20 }
             "minecraft:bread" = { buy = 6 }
+
+            # --- Schematic shop (Schematic Market block) ---
+            # Drop .schematic (Schematica) or .schem (Sponge) files into the folder
+            # below; operators list them at a price from the block's configure GUI
+            # (or in [schematic_prices] below, one per line).
+            # Players buy a listing and the structure is pasted at one of 8 build
+            # slots around the block. .schematic files use 1.12.2 numeric IDs mapped
+            # to modern blocks (vanilla only); .schem files use named block palettes
+            # and support modded blocks when those mods are installed.
+            [schematics]
+            # Folder holding schematic files. Absolute path, or relative to the game directory.
+            folder = "config/marketblocks/schematics"
+            # Largest schematic that may be pasted, in blocks. Grief protection.
+            maxVolume = 32768
+            # Horizontal distance in blocks from the Schematic Market to each build slot.
+            slotRadius = 6
+            # Price used when an operator lists a schematic from the in-game GUI.
+            defaultPrice = 100
+
+            # --- Schematic listings for the Schematic Market, one per line ---
+            # Format:  "File.schematic" = price   or   "File.schem" = price
+            # Only files present in the folder above can be bought; missing files
+            # are shown dimmed in the configure GUI, never deleted from this list.
+            [schematic_prices]
             """;
     }
 }

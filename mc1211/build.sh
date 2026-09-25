@@ -10,11 +10,15 @@
 #   - Fabric needs intermediary names: compile official, then remap
 #     official -> obf -> intermediary with libs/tools/remap_mod_fabric.sh.
 #
-# Usage: ./build.sh   (run from mc1211/)
+# Usage: ./build.sh [version]   (run from mc1211/)
 set -euo pipefail
 cd "$(dirname "$0")"
 
-VERSION="1.0.6"
+VERSION="${1:-1.0.6}"
+
+# Stamp the version into the in-code constant.
+sed -i "s/public static final String VERSION = \"[^\"]*\";/public static final String VERSION = \"$VERSION\";/" \
+    "common1211/src/main/java/com/maximarcana/marketblocks/MarketBlocks.java"
 JDK="$HOME/.jdks/jdk-25.0.4.1+1/bin"
 JAVAC="$JDK/javac"
 JAR="$JDK/jar"

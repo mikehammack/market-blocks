@@ -30,7 +30,8 @@ import net.minecraft.world.phys.BlockHitResult;
 
 /**
  * Player-owned shop. The placer becomes the owner; only the owner or an
- * operator can break it (enforced by the destroyBlock mixin). Breaking
+ * operator can break it (enforced by the loader break event via
+ * BreakProtection). Breaking
  * returns stock and earnings to the owner: stock drops at the block (or is
  * queued for offline owners), earnings are credited to their balance.
  */
@@ -153,7 +154,7 @@ public class MarketStallBlock extends Block implements EntityBlock {
         stall.getStock().clearContent();
     }
 
-    /** Used by the break-protection mixin. */
+    /** Used by the break-protection event handler (BreakProtection). */
     public static boolean canBreak(Player player, MarketStallBlockEntity stall) {
         return MarketBlocks.isOperator(player)
             || (stall != null && stall.isOwner(player.getUUID()));

@@ -1,16 +1,16 @@
-# Market Blocks 1.0.6 — Forge 1.12.2 port
+# Market Blocks 1.0.7 — Forge 1.12.2 port
 
-A backport of Market Blocks 1.0.6 to Minecraft 1.12.2 / Forge 14.23.5.2860,
+A backport of Market Blocks 1.0.7 to Minecraft 1.12.2 / Forge 14.23.5.2860,
 built without Gradle (manual `javac` toolchain). This module is fully
 self-contained: `common/`, `fabric/`, `neoforge/`, and the root `build.sh`
 were not touched.
 
-- Mod ID: `marketblocks` · Version: `1.0.6`
-- Build: `./build.sh` → `build/libs/marketblocks-1.0.6-forge1122.jar`
+- Mod ID: `marketblocks` · Version: `1.0.7`
+- Build: `./build.sh` → `build/libs/marketblocks-1.0.7-forge1122.jar`
 - Java 8 bytecode (`javac --release 8`), SRG (obfuscated) member names in
   the shipped jar, as a real 1.12.2 Forge mod requires.
 
-## Feature parity with 1.0.6 (26.x)
+## Feature parity with 1.0.7 (26.x)
 
 | Feature | Status |
 |---|---|

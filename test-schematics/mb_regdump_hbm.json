@@ -1,0 +1,1 @@
+{"description":"Boot with HBM to dump block registry IDs via temp MarketBlocks logging.","mod":"marketblocks","steps":[{"action":"wait_ticks","ticks":100},{"action":"assert_no_crash"}],"world":"mb_regdump_hbm"}

@@ -63,8 +63,10 @@ public final class MarketBlocksForge {
 
         blocks.register("market_stall", MarketContent::createStallBlock);
         blocks.register("admin_market", MarketContent::createAdminMarketBlock);
+        blocks.register("schematic_market", MarketContent::createSchematicMarketBlock);
         items.register("market_stall", MarketContent::createStallItem);
         items.register("admin_market", MarketContent::createAdminMarketItem);
+        items.register("schematic_market", MarketContent::createSchematicMarketItem);
         // The supplier runs at registration time, after the blocks themselves
         // are registered, so the BlockEntityType can be created safely.
         blockEntities.register("market_stall", MarketContent::createStallBlockEntityType);
@@ -85,6 +87,7 @@ public final class MarketBlocksForge {
                 ResourceLocation.fromNamespaceAndPath("minecraft", "functional_blocks")))) {
                 event.accept(MarketContent::createStallItem);
                 event.accept(MarketContent::createAdminMarketItem);
+                event.accept(MarketContent::createSchematicMarketItem);
             }
         });
 

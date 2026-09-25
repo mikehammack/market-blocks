@@ -1,8 +1,11 @@
 tile.marketblocks.market_stall.name=Market Stall
 tile.marketblocks.admin_market.name=Admin Market
+tile.marketblocks.schematic_market.name=Schematic Market
 menu.marketblocks.stall_owner=Market Stall (Owner)
 menu.marketblocks.stall_buyer=%s's Market Stall
 menu.marketblocks.admin_market=Admin Market
+menu.marketblocks.schematic_market=Schematic Market
 message.marketblocks.stall_limit=You already own the maximum of %s market stalls.
 message.marketblocks.stall_break_denied=Only the stall owner or an operator can break this stall.
 message.marketblocks.admin_market_creative_only=Only players in Creative mode can place or break the Admin Market.
+message.marketblocks.schematic_market_creative_only=Only players in Creative mode can place or break the Schematic Market.

@@ -138,12 +138,12 @@ $JAVA -cp "$TR" net.fabricmc.tinyremapper.Main mod-obf.jar mod-intermediary.jar 
 - `official_to_srg.srg`: Block -> `C_1706_` (67 methods, 24 fields),
   ItemStack -> `C_1391_` (141 methods, 19 fields).
 
-## Market Blocks v1.0.6 port (common1211 / fabric1211 / forge1211)
+## Market Blocks v1.0.7 port (common1211 / fabric1211 / forge1211)
 
 `./build.sh` compiles both loaders with plain `javac` and packages:
 
-- `build/libs/marketblocks-1.0.6-fabric1211.jar` (remapped official -> obf -> intermediary)
-- `build/libs/marketblocks-1.0.6-forge1211.jar` (official names, as Forge 1.21.1 runs)
+- `build/libs/marketblocks-1.0.7-fabric1211.jar` (remapped official -> obf -> intermediary)
+- `build/libs/marketblocks-1.0.7-forge1211.jar` (official names, as Forge 1.21.1 runs)
 
 **1.21.1 API deltas vs the 26.x (NeoForge) source it was ported from:**
 - `Identifier` -> `ResourceLocation`; `ClickType` is now `ClickType` (same

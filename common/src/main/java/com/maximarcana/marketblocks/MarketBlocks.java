@@ -18,7 +18,7 @@ import net.minecraft.world.level.GameType;
 public final class MarketBlocks {
     public static final String MOD_ID = "marketblocks";
     public static final String MOD_NAME = "Market Blocks";
-    public static final String VERSION = "1.0.6";
+    public static final String VERSION = "1.0.7";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_NAME);
 
     private MarketBlocks() {

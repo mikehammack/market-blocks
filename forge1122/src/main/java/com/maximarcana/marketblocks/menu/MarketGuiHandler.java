@@ -25,6 +25,7 @@ public class MarketGuiHandler implements IGuiHandler {
     public static final int STALL_OWNER = 0;
     public static final int STALL_BUYER = 1;
     public static final int ADMIN_MARKET = 2;
+    public static final int SCHEMATIC_MARKET = 3;
 
     @Override
     public Object getServerGuiElement(int id, EntityPlayer player, World world, int x, int y, int z) {
@@ -53,6 +54,9 @@ public class MarketGuiHandler implements IGuiHandler {
         if (id == ADMIN_MARKET) {
             return new AdminMarketContainer(mp.inventory, mp, world, pos);
         }
+        if (id == SCHEMATIC_MARKET) {
+            return new SchematicMarketContainer(mp.inventory, mp, world, pos);
+        }
         return null;
     }
 
@@ -76,6 +80,12 @@ public class MarketGuiHandler implements IGuiHandler {
                 == GameType.CREATIVE;
             Container c = new AdminMarketContainer(inv, world, pos, creative);
             return new MarketGui(inv, title("menu.marketblocks.admin_market", 54), c);
+        }
+        if (id == SCHEMATIC_MARKET) {
+            boolean creative = Minecraft.getMinecraft().playerController.getCurrentGameType()
+                == GameType.CREATIVE;
+            Container c = new SchematicMarketContainer(inv, world, pos, creative);
+            return new MarketGui(inv, title("menu.marketblocks.schematic_market", 54), c);
         }
         return null;
     }

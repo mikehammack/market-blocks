@@ -1,5 +1,7 @@
 #!/bin/bash
-# Market Blocks 1.0.6 - Forge 1.12.2 manual build (no Gradle).
+# Market Blocks - Forge 1.12.2 manual build (no Gradle).
+#
+# Usage: ./build.sh [version]   (defaults to 1.0.6)
 #
 # Pipeline:
 #   1. Fetch toolchain artifacts (idempotent; skips what exists).
@@ -16,8 +18,13 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 FORGE_VER="14.23.5.2860"
-MOD_VER="1.0.6"
+MOD_VER="${1:-1.0.6}"
 OUT_JAR="build/libs/marketblocks-${MOD_VER}-forge1122.jar"
+
+# Stamp the version into the in-code constant (mcmod.info is handled via a
+# staged copy at packaging time, so the source tree stays clean).
+sed -i "s/public static final String VERSION = \"[^\"]*\";/public static final String VERSION = \"$MOD_VER\";/" \
+    "src/main/java/com/maximarcana/marketblocks/MarketBlocks.java"
 
 # --- Java ---------------------------------------------------------------
 if [ -x "$HOME/.jdks/jdk-25.0.4.1+1/bin/java" ]; then
@@ -97,7 +104,12 @@ echo "  compiled $(find build/classes -name '*.class' | wc -l) classes"
 # --- 6. Package + reobfuscate -------------------------------------------
 echo "==> Packaging and reobfuscating (MCP -> SRG)"
 rm -f build/mod-mcp.jar
-"$JAR" cf build/mod-mcp.jar -C build/classes . -C src/main/resources .
+# Stage resources so mcmod.info carries the requested version (first "version"
+# key only; "mcversion" is untouched).
+rm -rf build/stage-res && mkdir -p build/stage-res
+cp -r src/main/resources/. build/stage-res/
+sed -i "0,/\"version\": \"[^\"]*\"/s//\"version\": \"$MOD_VER\"/" build/stage-res/mcmod.info
+"$JAR" cf build/mod-mcp.jar -C build/classes . -C build/stage-res .
 FULL_CP="$SS_CP:build/minecraft-1.12.2-client-mcp-patched.jar:build/forge-1.12.2-${FORGE_VER}-mcp.jar:libs/guava-21.0.jar:libs/gson-2.8.0.jar:libs/commons-lang3-3.5.jar:libs/jsr305-3.0.2.jar"
 "$JAVA" -cp "$FULL_CP" net.md_5.specialsource.SpecialSource \
     -l \

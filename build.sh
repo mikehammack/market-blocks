@@ -24,14 +24,15 @@ sed -i "s/public static final String VERSION = \"[^\"]*\";/public static final S
     "$ROOT/common/src/main/java/com/maximarcana/marketblocks/MarketBlocks.java"
 
 echo "==> Compiling common..."
-mkdir -p "$ROOT/build/common-classes"
+# Clean: deleted sources must not leave ghost classes in the jar.
+rm -rf "$ROOT/build/common-classes" && mkdir -p "$ROOT/build/common-classes"
 # shellcheck disable=SC2086
 "$JAVAC" -encoding UTF-8 --release 25 -nowarn -cp "$BASE_CP" \
     -d "$ROOT/build/common-classes" \
     $(find "$ROOT/common/src/main/java" -name '*.java')
 
 echo "==> Compiling fabric..."
-mkdir -p "$ROOT/build/fabric-classes"
+rm -rf "$ROOT/build/fabric-classes" && mkdir -p "$ROOT/build/fabric-classes"
 FABRIC_MODULES_CP="$(find "$ROOT/libs/fabric-modules/META-INF/jars" -name '*.jar' | tr '\n' ':')"
 "$JAVAC" -encoding UTF-8 --release 25 -nowarn \
     -cp "$ROOT/build/common-classes:$ROOT/libs/fabric-loader-0.19.5.jar:$ROOT/libs/fabric-api-0.160.5+26.3.jar:${FABRIC_MODULES_CP}$BASE_CP" \
@@ -39,7 +40,7 @@ FABRIC_MODULES_CP="$(find "$ROOT/libs/fabric-modules/META-INF/jars" -name '*.jar
     $(find "$ROOT/fabric/src/main/java" -name '*.java')
 
 echo "==> Compiling neoforge..."
-mkdir -p "$ROOT/build/neoforge-classes"
+rm -rf "$ROOT/build/neoforge-classes" && mkdir -p "$ROOT/build/neoforge-classes"
 "$JAVAC" -encoding UTF-8 --release 25 -nowarn \
     -cp "$ROOT/build/common-classes:$ROOT/libs/neoforge-26.3.0.3-beta-universal.jar:$ROOT/libs/fancymodloader-loader-12.0.0.jar:$ROOT/libs/neoforge-bus-8.0.5.jar:$ROOT/libs/stubs:$BASE_CP" \
     -d "$ROOT/build/neoforge-classes" \
@@ -52,7 +53,6 @@ mkdir -p "$ROOT/build/libs" "$ROOT/build/stage-fabric" "$ROOT/build/stage-neofor
 rm -rf "$ROOT/build/stage-fabric" && mkdir -p "$ROOT/build/stage-fabric"
 cp -r "$ROOT/build/common-classes/"* "$ROOT/build/stage-fabric/"
 cp -r "$ROOT/build/fabric-classes/"* "$ROOT/build/stage-fabric/"
-cp "$ROOT/common/src/main/resources/marketblocks.mixins.json" "$ROOT/build/stage-fabric/"
 cp "$ROOT/LICENSE" "$ROOT/build/stage-fabric/"
 cp -r "$ROOT/common/src/main/resources/assets" "$ROOT/build/stage-fabric/"
 [ -d "$ROOT/common/src/main/resources/data" ] && cp -r "$ROOT/common/src/main/resources/data" "$ROOT/build/stage-fabric/"
@@ -61,11 +61,16 @@ FABRIC_JAR="$ROOT/build/libs/marketblocks-${VERSION}-fabric.jar"
 rm -f "$FABRIC_JAR"
 "$JAR" --create --file "$FABRIC_JAR" -C "$ROOT/build/stage-fabric" .
 
+# NOTE (2026-09-25): no remap step. Mojang ships 26.3 unobfuscated (official
+# names, no client_mappings published) and Fabric publishes no intermediary
+# for 26.3 (meta reports 0.0.0) -- the loader runs the game in official
+# names, so the mod ships official too. (The 1.21.1 build still remaps:
+# that version IS obfuscated.)
+
 # --- NeoForge jar ---
 rm -rf "$ROOT/build/stage-neoforge" && mkdir -p "$ROOT/build/stage-neoforge"
 cp -r "$ROOT/build/common-classes/"* "$ROOT/build/stage-neoforge/"
 cp -r "$ROOT/build/neoforge-classes/"* "$ROOT/build/stage-neoforge/"
-cp "$ROOT/common/src/main/resources/marketblocks.mixins.json" "$ROOT/build/stage-neoforge/"
 cp "$ROOT/LICENSE" "$ROOT/build/stage-neoforge/"
 cp -r "$ROOT/common/src/main/resources/assets" "$ROOT/build/stage-neoforge/"
 [ -d "$ROOT/common/src/main/resources/data" ] && cp -r "$ROOT/common/src/main/resources/data" "$ROOT/build/stage-neoforge/"

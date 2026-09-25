@@ -34,13 +34,16 @@ public class BreakProtectionHandler {
                         "message.marketblocks.stall_break_denied"));
                 }
             }
-        } else if (block == MarketContent.ADMIN_MARKET_BLOCK) {
+        } else if (block == MarketContent.ADMIN_MARKET_BLOCK
+                || block == MarketContent.SCHEMATIC_MARKET_BLOCK) {
             if (!(player instanceof EntityPlayerMP)
                 || !MarketBlocks.isCreative((EntityPlayerMP) player)) {
                 event.setCanceled(true);
                 if (player instanceof EntityPlayerMP) {
                     ((EntityPlayerMP) player).sendMessage(new TextComponentTranslation(
-                        "message.marketblocks.admin_market_creative_only"));
+                        block == MarketContent.SCHEMATIC_MARKET_BLOCK
+                            ? "message.marketblocks.schematic_market_creative_only"
+                            : "message.marketblocks.admin_market_creative_only"));
                 }
             }
         }
